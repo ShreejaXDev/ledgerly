@@ -1,11 +1,18 @@
 from datetime import date, datetime
-from pydantic import BaseModel, ConfigDict
+from enum import Enum
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class TransactionType(str, Enum):
+    income = "income"
+    expense = "expense"
 
 
 class TransactionCreate(BaseModel):
     user_id: int
-    amount: float
-    transaction_type: str
+    amount: float = Field(gt=0)
+    transaction_type: TransactionType
     category: str
     description: str | None = None
     merchant: str | None = None
@@ -16,7 +23,7 @@ class TransactionResponse(BaseModel):
     id: int
     user_id: int
     amount: float
-    transaction_type: str
+    transaction_type: TransactionType
     category: str
     description: str | None
     merchant: str | None

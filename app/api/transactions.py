@@ -1,12 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.services.transaction_service import TransactionService
+
 from app.database.dependencies import get_db
-from app.models.transaction import Transaction
-from app.schemas.transaction import (
-    TransactionCreate,
-    TransactionResponse,
-)
+from app.schemas.transaction import TransactionCreate, TransactionResponse
+from app.services.transaction_service import TransactionService
+
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
 
 
@@ -26,3 +24,11 @@ def get_transactions(
     db: Session = Depends(get_db)
 ):
     return TransactionService.get_transactions(db)
+
+
+@router.get("/{transaction_id}", response_model=TransactionResponse)
+def get_transaction_by_id(
+    transaction_id: int,
+    db: Session = Depends(get_db),
+):
+    return TransactionService.get_transaction_by_id(db, transaction_id)

@@ -10,7 +10,7 @@ from app.schemas.transaction import TransactionCreate, TransactionType
 from app.schemas.user import UserCreate
 from app.services.transaction_service import TransactionService
 from app.services.user_service import UserService
-from app.utils.parser import parse_expense
+from app.utils.gemini_parser import parse_transaction
 
 
 class BotService:
@@ -68,20 +68,22 @@ class BotService:
                 user.id,
             )
 
-        # ── Step 2: Parse expense ─────────────────────────────────────────────
+        # ── Step 2: Parse message via Gemini ─────────────────────────────────
         try:
-            parsed = parse_expense(payload.message)
+            parsed = parse_transaction(payload.message)
         except InvalidTransaction:
             logger.warning(
-                "Expense parse failed | telegram_id=%s message='%s'",
+                "Gemini parse failed | telegram_id=%s message='%s'",
                 payload.telegram_id,
                 payload.message,
             )
             return {
                 "reply": (
-                    "❌ Invalid expense format.\n\n"
-                    "Example:\n"
-                    "250 pizza"
+                    "❌ Could not understand your message.\n\n"
+                    "Try something like:\n"
+                    "• 250 pizza\n"
+                    "• Yesterday spent 350 on Uber\n"
+                    "• Received salary 25000"
                 )
             }
 
@@ -92,23 +94,33 @@ class BotService:
             description=parsed["description"],
             transaction_type=TransactionType(parsed["transaction_type"]),
             category=parsed["category"],
-            transaction_date=date.today(),
+            transaction_date=date.fromisoformat(parsed["transaction_date"]),
         )
 
         transaction = TransactionService.create_transaction(db, transaction_data)
 
         logger.info(
-            "Transaction saved | transaction_id=%s user_id=%s amount=%.2f",
+            "Transaction saved | transaction_id=%s user_id=%s amount=%.2f "
+            "category='%s' date=%s",
             transaction.id,
             transaction.user_id,
             transaction.amount,
+            transaction.category,
+            transaction.transaction_date,
         )
 
         # ── Step 4: Return confirmation reply ─────────────────────────────────
+        tx_type_label = transaction.transaction_type.capitalize() \
+            if isinstance(transaction.transaction_type, str) \
+            else transaction.transaction_type.value.capitalize()
+
         return {
             "reply": (
-                f"✅ Expense Added\n\n"
+                f"✅ Transaction Saved\n\n"
                 f"Amount: ₹{transaction.amount:,.0f}\n"
-                f"Description: {transaction.description or '—'}"
+                f"Category: {transaction.category}\n"
+                f"Description: {transaction.description or '—'}\n"
+                f"Date: {transaction.transaction_date}\n"
+                f"Type: {tx_type_label}"
             )
         }

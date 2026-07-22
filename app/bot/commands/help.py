@@ -15,8 +15,6 @@ Ledgerly Commands
 
 /help
 
-Coming Soon
-
 /today
 
 /week
@@ -24,5 +22,19 @@ Coming Soon
 /month
 
 /summary
+
+/insights
+
+/setbudget
+
+/budget
+
+/addrecurring
+
+/listrecurring
+
+/deleterecurring
+
+/export
 """
     )
